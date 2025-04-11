@@ -1,103 +1,260 @@
-import Image from "next/image";
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+	// Mock auth state - in production, this would come from an auth context/provider
+	const [isLoggedIn, setIsLoggedIn] = useState(false);
+	const [isAdmin, setIsAdmin] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	return (
+		<div className='container mx-auto px-4 py-8'>
+			{/* Hero Section */}
+			<section className='py-16 md:py-24'>
+				<div className='max-w-4xl mx-auto text-center'>
+					<h1 className='text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6'>
+						Welcome to{' '}
+						<span className='text-primary'>wuddevdet.com</span>
+						<br />
+						Detroit&apos;s Web Dev Hub
+					</h1>
+					<p className='text-xl md:text-2xl text-muted-foreground mb-10'>
+						Connect with Michigan developers, share events, and grow
+						together.
+					</p>
+
+					{/* Role-based CTAs */}
+					{!isLoggedIn ? (
+						<Link
+							href='/signup'
+							className='rounded-full bg-primary text-primary-foreground px-6 py-3 text-lg font-medium hover:bg-primary/90 transition-colors'
+						>
+							Join the Community → Sign Up
+						</Link>
+					) : (
+						<Link
+							href='/say-what-up-doe'
+							className='rounded-full bg-primary text-primary-foreground px-6 py-3 text-lg font-medium hover:bg-primary/90 transition-colors'
+						>
+							Check the latest events → Say What Up Doe
+						</Link>
+					)}
+				</div>
+			</section>
+
+			{/* Interactive Map Section */}
+			<section className='py-12 md:py-16'>
+				<div className='max-w-4xl mx-auto'>
+					<h2 className='text-2xl md:text-3xl font-bold mb-8 text-center'>
+						Our Community in Southeast Michigan
+					</h2>
+					<div className='bg-muted rounded-lg aspect-video relative overflow-hidden'>
+						{/* This would be replaced with an actual interactive map component */}
+						<div className='absolute inset-0 flex items-center justify-center'>
+							<p className='text-lg text-muted-foreground'>
+								Interactive Detroit/Michigan Map
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* Preview Cards Section */}
+			<section className='py-12 md:py-16'>
+				<div className='max-w-6xl mx-auto'>
+					<h2 className='text-2xl md:text-3xl font-bold mb-8 text-center'>
+						Explore What We Offer
+					</h2>
+
+					<div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
+						{/* Portfolio Card */}
+						<div className='bg-card rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105'>
+							<div className='h-48 bg-primary/10 relative'>
+								<div className='absolute inset-0 flex items-center justify-center'>
+									<svg
+										xmlns='http://www.w3.org/2000/svg'
+										width='48'
+										height='48'
+										viewBox='0 0 24 24'
+										fill='none'
+										stroke='currentColor'
+										strokeWidth='2'
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										className='text-primary'
+									>
+										<rect
+											width='7'
+											height='7'
+											x='3'
+											y='3'
+											rx='1'
+										/>
+										<rect
+											width='7'
+											height='7'
+											x='14'
+											y='3'
+											rx='1'
+										/>
+										<rect
+											width='7'
+											height='7'
+											x='14'
+											y='14'
+											rx='1'
+										/>
+										<rect
+											width='7'
+											height='7'
+											x='3'
+											y='14'
+											rx='1'
+										/>
+									</svg>
+								</div>
+							</div>
+							<div className='p-6'>
+								<h3 className='text-xl font-bold mb-2'>
+									Portfolio
+								</h3>
+								<p className='text-muted-foreground mb-4'>
+									Explore the works of talented developers in
+									our community.
+								</p>
+								<Link
+									href='/portfolio'
+									className='text-primary font-medium hover:underline'
+								>
+									View Projects →
+								</Link>
+							</div>
+						</div>
+
+						{/* Merch Card */}
+						<div className='bg-card rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105'>
+							<div className='h-48 bg-primary/10 relative'>
+								<div className='absolute inset-0 flex items-center justify-center'>
+									<svg
+										xmlns='http://www.w3.org/2000/svg'
+										width='48'
+										height='48'
+										viewBox='0 0 24 24'
+										fill='none'
+										stroke='currentColor'
+										strokeWidth='2'
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										className='text-primary'
+									>
+										<path d='M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z' />
+									</svg>
+								</div>
+							</div>
+							<div className='p-6'>
+								<h3 className='text-xl font-bold mb-2'>
+									Merch
+								</h3>
+								<p className='text-muted-foreground mb-4'>
+									Show your Detroit dev pride with our branded
+									apparel.
+								</p>
+								<Link
+									href='/merch'
+									className='text-primary font-medium hover:underline'
+								>
+									Shop Now →
+								</Link>
+							</div>
+						</div>
+
+						{/* Say What Up Doe Card */}
+						<div className='bg-card rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105'>
+							<div className='h-48 bg-primary/10 relative'>
+								<div className='absolute inset-0 flex items-center justify-center'>
+									<svg
+										xmlns='http://www.w3.org/2000/svg'
+										width='48'
+										height='48'
+										viewBox='0 0 24 24'
+										fill='none'
+										stroke='currentColor'
+										strokeWidth='2'
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										className='text-primary'
+									>
+										<path d='M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z' />
+										<path d='M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1' />
+									</svg>
+								</div>
+							</div>
+							<div className='p-6'>
+								<h3 className='text-xl font-bold mb-2'>
+									Say What Up Doe
+								</h3>
+								<p className='text-muted-foreground mb-4'>
+									Connect with the community and participate
+									in local events.
+								</p>
+								<Link
+									href='/say-what-up-doe'
+									className='text-primary font-medium hover:underline'
+								>
+									Join the Conversation →
+								</Link>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* Community Stats Section */}
+			<section className='py-12 md:py-16 bg-muted/30 rounded-lg my-12'>
+				<div className='max-w-6xl mx-auto px-4'>
+					<h2 className='text-2xl md:text-3xl font-bold mb-8 text-center'>
+						Our Growing Community
+					</h2>
+
+					<div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-center'>
+						<div className='p-4'>
+							<p className='text-4xl font-bold text-primary mb-2'>
+								100+
+							</p>
+							<p className='text-muted-foreground'>
+								Active Members
+							</p>
+						</div>
+						<div className='p-4'>
+							<p className='text-4xl font-bold text-primary mb-2'>
+								25+
+							</p>
+							<p className='text-muted-foreground'>
+								Weekly Events
+							</p>
+						</div>
+						<div className='p-4'>
+							<p className='text-4xl font-bold text-primary mb-2'>
+								50+
+							</p>
+							<p className='text-muted-foreground'>
+								Projects Showcased
+							</p>
+						</div>
+						<div className='p-4'>
+							<p className='text-4xl font-bold text-primary mb-2'>
+								10+
+							</p>
+							<p className='text-muted-foreground'>
+								Partner Companies
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	);
 }
