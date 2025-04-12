@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { AuthProvider } from '@/context/AuthContext';
 import { BackgroundDecoration } from '@/components/layout/BackgroundDecoration';
 import { Header } from '@/components/layout/Header/Header';
 import { Footer } from '@/components/layout/Footer/Footer';
+import '@/styles/mid-century-patterns.css';
 import './globals.css';
 
 const geistSans = Geist({
@@ -26,19 +28,17 @@ export default function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
-	// Mock auth state - replace with actual auth logic later
-	const isLoggedIn = false;
-	const isAdmin = false;
-
 	return (
 		<html lang='en'>
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-gradient-to-t from-primary/10 to-secondary/10`}
 			>
-				<BackgroundDecoration />
-				<Header isLoggedIn={isLoggedIn} />
-				<main className='flex-1 relative'>{children}</main>
-				<Footer />
+				<AuthProvider>
+					<BackgroundDecoration />
+					<Header />
+					<main className='flex-1 relative'>{children}</main>
+					<Footer />
+				</AuthProvider>
 			</body>
 		</html>
 	);

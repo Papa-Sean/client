@@ -1,13 +1,17 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import { InputField } from './InputField';
-import { PasswordField } from './PasswordField';
 import { LocationSelect } from './LocationSelect';
 import { ErrorAlert } from './ErrorAlert';
-import { FormFooter } from './FormFooter';
 
 export function SignupForm() {
+	const { signup } = useAuth();
 	const router = useRouter();
+
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
@@ -32,11 +36,17 @@ export function SignupForm() {
 		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
 	) => {
 		const { name, value } = e.target;
-		setFormData((prev) => ({ ...prev, [name]: value }));
+		setFormData((prev) => ({
+			...prev,
+			[name]: value,
+		}));
 
 		// Clear error when user types
 		if (errors[name as keyof typeof errors]) {
-			setErrors((prev) => ({ ...prev, [name]: '' }));
+			setErrors((prev) => ({
+				...prev,
+				[name]: '',
+			}));
 		}
 
 		// Clear general signup error when user makes changes
@@ -54,6 +64,7 @@ export function SignupForm() {
 			confirmPassword: '',
 			location: '',
 		};
+
 		let isValid = true;
 
 		// Name validation
@@ -111,28 +122,40 @@ export function SignupForm() {
 		setSignupError('');
 
 		try {
-			// This would be an actual API call in production
-			// Simulating API call with timeout
-			await new Promise((resolve) => setTimeout(resolve, 1500));
+			console.log('Form data being sent:', {
+				name: formData.name,
+				email: formData.email,
+				password: formData.password,
+				location: formData.location,
+			});
 
-			// Simulate successful signup for demo
-			console.log('Signup successful with data:', formData);
+			// Submit to the MongoDB-backed API
+			await signup({
+				name: formData.name,
+				email: formData.email,
+				password: formData.password,
+				location: formData.location,
+			});
 
-			// Redirect to home page or login after successful signup
-			router.push('/login');
+			// If successful, redirect to login page
+			router.push('/login?signup=success');
 		} catch (error) {
+			// Handle errors from the API
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: 'An error occurred during signup';
+			setSignupError(errorMessage);
+
 			console.error('Signup error:', error);
-			setSignupError(
-				'An error occurred during signup. Please try again.'
-			);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
 	return (
-		<div className='bg-card rounded-lg shadow-lg p-6 md:p-8'>
-			<ErrorAlert message={signupError} />
+		<>
+			{signupError && <ErrorAlert message={signupError} />}
 
 			<form
 				onSubmit={handleSubmit}
@@ -161,20 +184,22 @@ export function SignupForm() {
 					onChange={handleChange}
 				/>
 
-				<PasswordField
+				<InputField
 					id='password'
 					name='password'
 					label='Password'
+					type='password'
 					value={formData.password}
 					error={errors.password}
 					disabled={isSubmitting}
 					onChange={handleChange}
 				/>
 
-				<PasswordField
+				<InputField
 					id='confirmPassword'
 					name='confirmPassword'
 					label='Confirm Password'
+					type='password'
 					value={formData.confirmPassword}
 					error={errors.confirmPassword}
 					disabled={isSubmitting}
@@ -182,6 +207,8 @@ export function SignupForm() {
 				/>
 
 				<LocationSelect
+					name='location'
+					label='Location'
 					value={formData.location}
 					error={errors.location}
 					disabled={isSubmitting}
@@ -197,7 +224,7 @@ export function SignupForm() {
 				</button>
 			</form>
 
-			<FormFooter />
-		</div>
+			
+		</>
 	);
 }

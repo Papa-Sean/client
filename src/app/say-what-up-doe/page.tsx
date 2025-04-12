@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { PageHeader } from './components/PageHeader';
 import { GuestForm } from './components/GuestView/GuestForm';
 import { AuthenticatedView } from './components/AuthenticatedView/AuthenticatedView';
-import { dummyPosts, dummyGuestMessages } from './components/data';
+import { postsApi } from '@/lib/api/posts';
+import { contactApi } from '@/lib/api/contact';
 import {
 	Post,
 	GuestMessage,
@@ -14,14 +17,20 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function SayWhatUpDoePage() {
-	// Auth state
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
-	const [isAdmin, setIsAdmin] = useState(false);
+	// Protection - will redirect to login if not authenticated
+	const { isLoading: isRouteLoading } = useProtectedRoute({
+		requiredRole: undefined,
+	});
+
+	// Get auth state from context
+	const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+	const isAdmin = user?.role === 'admin';
 
 	// Data state
-	const [posts, setPosts] = useState<Post[]>(dummyPosts);
-	const [guestMessages, setGuestMessages] =
-		useState<GuestMessage[]>(dummyGuestMessages);
+	const [posts, setPosts] = useState<Post[]>([]);
+	const [guestMessages, setGuestMessages] = useState<GuestMessage[]>([]);
+	const [isDataLoading, setIsDataLoading] = useState(true);
+	const [error, setError] = useState('');
 
 	// UI state
 	const [activeTab, setActiveTab] = useState('posts');
@@ -29,17 +38,11 @@ export default function SayWhatUpDoePage() {
 	const [activeCommentPostId, setActiveCommentPostId] = useState<
 		string | null
 	>(null);
-	const [isLoading, setIsLoading] = useState(true);
 	const [pageTheme, setPageTheme] = useState<
 		'primary' | 'secondary' | 'accent'
 	>('primary');
 
 	// Form state
-	const [guestForm, setGuestForm] = useState<GuestFormData>({
-		name: '',
-		email: '',
-		message: '',
-	});
 	const [newPostForm, setNewPostForm] = useState<PostFormData>({
 		title: '',
 		content: '',
@@ -47,38 +50,42 @@ export default function SayWhatUpDoePage() {
 		location: '',
 	});
 	const [newComment, setNewComment] = useState('');
+	const [guestForm, setGuestForm] = useState<GuestFormData>({
+		name: '',
+		email: '',
+		message: '',
+	});
 
-	// Show loading indicator briefly
+	// Fetch MongoDB data
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			setIsLoading(false);
-		}, 500);
-		return () => clearTimeout(timer);
-	}, []);
+		async function fetchData() {
+			if (!isAuthenticated || authLoading || isRouteLoading) return;
 
-	// Toggle functions for demo purposes
-	const toggleLogin = () => {
-		setIsLoading(true);
-		setTimeout(() => {
-			setIsLoggedIn(!isLoggedIn);
-			if (!isLoggedIn) setIsAdmin(false);
-			// Change theme based on login status
-			setPageTheme(isLoggedIn ? 'primary' : 'secondary');
-			setIsLoading(false);
-		}, 300);
-	};
+			setIsDataLoading(true);
+			setError('');
 
-	const toggleAdmin = () => {
-		setIsLoading(true);
-		setTimeout(() => {
-			setIsAdmin(!isAdmin);
-			// Change theme based on admin status
-			setPageTheme(isAdmin ? 'primary' : 'accent');
-			setIsLoading(false);
-		}, 300);
-	};
+			try {
+				// Load posts
+				const postsData = await postsApi.getPosts();
+				setPosts(postsData.posts);
 
-	// Guest form handlers
+				// If admin, also load guest messages
+				if (isAdmin) {
+					const messagesData = await contactApi.getGuestMessages();
+					setGuestMessages(messagesData);
+				}
+			} catch (err) {
+				console.error('Error fetching data:', err);
+				setError('Failed to load data. Please try again later.');
+			} finally {
+				setIsDataLoading(false);
+			}
+		}
+
+		fetchData();
+	}, [isAuthenticated, authLoading, isRouteLoading, isAdmin]);
+
+	// Event handlers
 	const handleGuestFormChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 	) => {
@@ -88,18 +95,14 @@ export default function SayWhatUpDoePage() {
 
 	const handleGuestFormSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsLoading(true);
-		// In a real app, this would send the form data to the server
-		setTimeout(() => {
-			alert(
-				`Message submitted! We'll get back to you at ${guestForm.email}`
-			);
-			setGuestForm({ name: '', email: '', message: '' });
-			setIsLoading(false);
-		}, 500);
+		// Reset form after submission (the actual submission is handled in the GuestForm component)
+		setGuestForm({
+			name: '',
+			email: '',
+			message: '',
+		});
 	};
 
-	// New post form handlers
 	const handleNewPostFormChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 	) => {
@@ -107,25 +110,23 @@ export default function SayWhatUpDoePage() {
 		setNewPostForm((prev) => ({ ...prev, [name]: value }));
 	};
 
-	const handleNewPostSubmit = (e: React.FormEvent) => {
+	const handleNewPostSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsLoading(true);
 
-		setTimeout(() => {
-			// Add new post to the list (for demo purposes)
-			const newPost: Post = {
-				id: `${posts.length + 1}`,
-				...newPostForm,
+		try {
+			const newPost = await postsApi.createPost(newPostForm);
+
+			// Ensure the post has a consistent ID property
+			const normalizedPost = {
+				...newPost,
+				id: newPost.id || newPost._id,
 				author: {
-					id: 'currentUser',
-					name: isAdmin ? 'Admin User' : 'Member User',
-					image: '/avatars/default.jpg',
+					...newPost.author,
+					id: newPost.author.id || newPost.author._id,
 				},
-				isPinned: false,
-				createdAt: new Date().toISOString(),
-				comments: [],
 			};
-			setPosts([newPost, ...posts]);
+
+			setPosts((prev) => [normalizedPost, ...prev]);
 			setNewPostForm({
 				title: '',
 				content: '',
@@ -133,165 +134,187 @@ export default function SayWhatUpDoePage() {
 				location: '',
 			});
 			setShowNewPostForm(false);
-			setIsLoading(false);
-		}, 300);
-	};
-
-	// Post management functions
-	const togglePinPost = (postId: string) => {
-		setPosts(
-			posts.map((post) =>
-				post.id === postId
-					? { ...post, isPinned: !post.isPinned }
-					: post
-			)
-		);
-	};
-
-	const deletePost = (postId: string) => {
-		setIsLoading(true);
-		setTimeout(() => {
-			setPosts(posts.filter((post) => post.id !== postId));
-			setIsLoading(false);
-		}, 200);
-	};
-
-	// Message management functions
-	const toggleResponseStatus = (messageId: string) => {
-		setGuestMessages((messages) =>
-			messages.map((msg) =>
-				msg.id === messageId
-					? { ...msg, isResponded: !msg.isResponded }
-					: msg
-			)
-		);
+		} catch (err) {
+			console.error('Error creating post:', err);
+			// Display error to user
+		}
 	};
 
 	// Comment functions
-	const handleCommentSubmit = (postId: string) => {
+	const handleCommentSubmit = async (postId: string) => {
 		if (!newComment.trim()) return;
 
-		setIsLoading(true);
-		setTimeout(() => {
-			const comment = {
-				id: `c${Math.random().toString(36).substr(2, 9)}`,
-				content: newComment,
-				author: {
-					id: 'currentUser',
-					name: isAdmin ? 'Admin User' : 'Member User',
-					image: '/avatars/default.jpg',
-				},
-				createdAt: new Date().toISOString(),
-			};
+		try {
+			const addedComment = await postsApi.addComment(postId, newComment);
 
-			setPosts(
-				posts.map((post) =>
-					post.id === postId
-						? { ...post, comments: [...post.comments, comment] }
+			// Update the posts with the new comment
+			setPosts((prev) =>
+				prev.map((post) =>
+					post.id === postId || post._id === postId
+						? {
+								...post,
+								comments: [...post.comments, addedComment],
+						  }
 						: post
 				)
 			);
 
 			setNewComment('');
 			setActiveCommentPostId(null);
-			setIsLoading(false);
-		}, 300);
-	};
-
-	// Determine background pattern based on theme
-	const getThemePattern = () => {
-		switch (pageTheme) {
-			case 'secondary':
-				return 'pattern-dots';
-			case 'accent':
-				return 'pattern-atomic';
-			default:
-				return 'pattern-chevron';
+		} catch (err) {
+			console.error('Error adding comment:', err);
+			// Display error to user
 		}
 	};
+
+	// Add this new function to delete comments
+	const deleteComment = async (postId: string, commentId: string) => {
+		try {
+			await postsApi.deleteComment(postId, commentId);
+
+			// Update the UI by removing the comment
+			setPosts((prev) =>
+				prev.map((post) =>
+					post.id === postId || post._id === postId
+						? {
+								...post,
+								comments: post.comments.filter(
+									(comment) =>
+										comment.id !== commentId &&
+										comment._id !== commentId
+								),
+						  }
+						: post
+				)
+			);
+		} catch (err) {
+			console.error('Error deleting comment:', err);
+			// Display error to user
+		}
+	};
+
+	const togglePinPost = async (postId: string) => {
+		try {
+			const result = await postsApi.togglePin(postId);
+
+			setPosts((prev) =>
+				prev.map((post) =>
+					post.id === postId
+						? { ...post, isPinned: result.isPinned }
+						: post
+				)
+			);
+		} catch (err) {
+			console.error('Error toggling pin:', err);
+			// Display error to user
+		}
+	};
+
+	const deletePost = async (postId: string) => {
+		if (!confirm('Are you sure you want to delete this post?')) return;
+
+		try {
+			await postsApi.deletePost(postId);
+			setPosts((prev) => prev.filter((post) => post.id !== postId));
+		} catch (err) {
+			console.error('Error deleting post:', err);
+			// Display error to user
+		}
+	};
+
+	const toggleResponseStatus = async (messageId: string) => {
+		try {
+			const updatedMessage = await contactApi.toggleResponseStatus(
+				messageId
+			);
+
+			setGuestMessages((prev) =>
+				prev.map((msg) => (msg.id === messageId ? updatedMessage : msg))
+			);
+		} catch (err) {
+			console.error('Error toggling response status:', err);
+			// Display error to user
+		}
+	};
+
+	// Show loading state
+	const isLoading =
+		isRouteLoading || authLoading || !isAuthenticated || isDataLoading;
+
+	if (isLoading) {
+		return (
+			<div className='h-screen flex items-center justify-center'>
+				<div className='animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full'></div>
+			</div>
+		);
+	}
+
+	// Show error state
+	if (error) {
+		return (
+			<div className='container mx-auto px-4 py-8'>
+				<div className='bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-6'>
+					<p>{error}</p>
+					<button
+						className='mt-2 px-4 py-2 bg-red-100 hover:bg-red-200 rounded'
+						onClick={() => window.location.reload()}
+					>
+						Retry
+					</button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div
 			className={cn(
 				'min-h-screen transition-all duration-500',
-				isLoading && 'opacity-70',
 				pageTheme === 'primary' && 'bg-primary/5',
 				pageTheme === 'secondary' && 'bg-secondary/5',
 				pageTheme === 'accent' && 'bg-accent/5'
 			)}
 		>
-			{/* Decorative background elements */}
-			<div className='fixed inset-0 -z-10 overflow-hidden'>
-				<div
-					className={cn(
-						'absolute inset-0 opacity-5',
-						getThemePattern()
-					)}
-				></div>
-				<div className='absolute -top-20 -right-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl'></div>
-				<div className='absolute top-1/3 left-1/4 w-40 h-40 bg-secondary/20 rounded-full blur-2xl'></div>
-				<div className='absolute bottom-1/4 right-10 w-80 h-40 bg-accent/20 rounded-full blur-3xl'></div>
-			</div>
-
 			<div className='container mx-auto px-4 py-8 relative z-10'>
-				<div
-					className={cn(
-						'h-1 absolute top-0 left-0 right-0 transition-all duration-500',
-						pageTheme === 'primary' && 'bg-primary',
-						pageTheme === 'secondary' && 'bg-secondary',
-						pageTheme === 'accent' && 'bg-accent'
-					)}
-				></div>
-
 				<PageHeader
-					isLoggedIn={isLoggedIn}
+					isLoggedIn={isAuthenticated}
 					isAdmin={isAdmin}
-					toggleLogin={toggleLogin}
-					toggleAdmin={toggleAdmin}
+					toggleLogin={() => {}}
+					toggleAdmin={() => {}}
 					theme={pageTheme}
 				/>
 
-				<div
-					className={cn(
-						'transition-all duration-500 transform',
-						isLoading
-							? 'translate-y-4 opacity-0'
-							: 'translate-y-0 opacity-100'
-					)}
-				>
-					{/* Render different views based on login state */}
-					{!isLoggedIn ? (
-						<GuestForm
-							formData={guestForm}
-							onChange={handleGuestFormChange}
-							onSubmit={handleGuestFormSubmit}
-							theme={pageTheme}
-						/>
-					) : (
-						<AuthenticatedView
-							isAdmin={isAdmin}
-							posts={posts}
-							guestMessages={guestMessages}
-							activeTab={activeTab}
-							showNewPostForm={showNewPostForm}
-							newPostForm={newPostForm}
-							activeCommentPostId={activeCommentPostId}
-							newComment={newComment}
-							setActiveTab={setActiveTab}
-							setNewPostForm={setNewPostForm}
-							setShowNewPostForm={setShowNewPostForm}
-							setNewComment={setNewComment}
-							setActiveCommentPostId={setActiveCommentPostId}
-							handleNewPostFormChange={handleNewPostFormChange}
-							handleNewPostSubmit={handleNewPostSubmit}
-							handleCommentSubmit={handleCommentSubmit}
-							togglePinPost={togglePinPost}
-							deletePost={deletePost}
-							toggleResponseStatus={toggleResponseStatus}
-							theme={pageTheme}
-						/>
-					)}
-				</div>
+				{isAuthenticated ? (
+					<AuthenticatedView
+						isAdmin={isAdmin}
+						posts={posts}
+						guestMessages={guestMessages}
+						activeTab={activeTab}
+						showNewPostForm={showNewPostForm}
+						newPostForm={newPostForm}
+						activeCommentPostId={activeCommentPostId}
+						newComment={newComment}
+						setActiveTab={setActiveTab}
+						setNewPostForm={setNewPostForm}
+						setShowNewPostForm={setShowNewPostForm}
+						setNewComment={setNewComment}
+						setActiveCommentPostId={setActiveCommentPostId}
+						handleNewPostFormChange={handleNewPostFormChange}
+						handleNewPostSubmit={handleNewPostSubmit}
+						handleCommentSubmit={handleCommentSubmit}
+						togglePinPost={togglePinPost}
+						deletePost={deletePost}
+						toggleResponseStatus={toggleResponseStatus}
+						theme={pageTheme}
+					/>
+				) : (
+					<GuestForm
+						formData={guestForm}
+						onChange={handleGuestFormChange}
+						onSubmit={handleGuestFormSubmit}
+						theme={pageTheme}
+					/>
+				)}
 			</div>
 		</div>
 	);

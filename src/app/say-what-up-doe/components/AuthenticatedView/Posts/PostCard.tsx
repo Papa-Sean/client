@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, Pin, Trash2 } from 'lucide-react';
 import { Post } from '../../types';
 import { CommentSection } from './CommentSection';
+import { useAuth } from '@/context/AuthContext';
 
 interface PostCardProps {
 	post: Post;
@@ -27,6 +28,37 @@ export function PostCard({
 	onTogglePin,
 	onDelete,
 }: PostCardProps) {
+	// Get current user to check ownership
+	const { user } = useAuth();
+	const postId = post.id || post._id;
+
+	// Check if user is the author of this post
+	const isAuthor = user?.id === (post.author.id || post.author._id);
+
+	// User can delete if they're the author or an admin
+	const canDelete = isAdmin || isAuthor;
+
+	const handleCommentSubmit = () => {
+		if (postId) {
+			onCommentSubmit(postId);
+		}
+	};
+
+	const handleTogglePin = () => {
+		if (postId) {
+			onTogglePin(postId);
+		}
+	};
+
+	const handleDelete = () => {
+		if (postId && canDelete) {
+			// Confirm before deletion
+			if (window.confirm('Are you sure you want to delete this post?')) {
+				onDelete(postId);
+			}
+		}
+	};
+
 	return (
 		<div
 			className={`bg-card rounded-lg shadow-md overflow-hidden ${
@@ -47,11 +79,11 @@ export function PostCard({
 						</div>
 					</div>
 
-					{/* Admin actions */}
-					{isAdmin && (
-						<div className='flex gap-2'>
+					{/* Control buttons - show admin pin and/or delete if authorized */}
+					<div className='flex gap-2'>
+						{isAdmin && (
 							<button
-								onClick={() => onTogglePin(post.id)}
+								onClick={handleTogglePin}
 								className={`p-1 rounded-full hover:bg-muted/50 transition-colors ${
 									post.isPinned
 										? 'text-primary'
@@ -63,43 +95,52 @@ export function PostCard({
 							>
 								<Pin size={18} />
 							</button>
+						)}
+
+						{canDelete && (
 							<button
-								onClick={() => onDelete(post.id)}
+								onClick={handleDelete}
 								className='p-1 rounded-full hover:bg-muted/50 transition-colors text-red-500'
 								title='Delete post'
 							>
 								<Trash2 size={18} />
 							</button>
-						</div>
-					)}
+						)}
+					</div>
 				</div>
 
 				<h2 className='text-xl font-bold mb-2'>{post.title}</h2>
 				<p className='mb-4'>{post.content}</p>
 
 				<div className='flex flex-col md:flex-row gap-4 mb-4 text-muted-foreground'>
-					<div className='flex items-center gap-1'>
-						<CalendarIcon size={16} />
-						<span>
-							{format(
-								new Date(post.eventDate),
-								"MMM d, yyyy 'at' h:mm a"
-							)}
-						</span>
-					</div>
-					<div>
-						<span>📍 {post.location}</span>
-					</div>
+					{post.eventDate && (
+						<div className='flex items-center gap-1'>
+							<CalendarIcon size={16} />
+							<span>
+								{format(
+									new Date(post.eventDate),
+									"MMM d, yyyy 'at' h:mm a"
+								)}
+							</span>
+						</div>
+					)}
+					{post.location && (
+						<div>
+							<span>📍 {post.location}</span>
+						</div>
+					)}
 				</div>
 
 				<CommentSection
-					postId={post.id}
+					postId={postId}
 					comments={post.comments}
 					activeCommentPostId={activeCommentPostId}
 					newComment={newComment}
 					setNewComment={setNewComment}
 					setActiveCommentPostId={setActiveCommentPostId}
-					onCommentSubmit={onCommentSubmit}
+					onCommentSubmit={handleCommentSubmit}
+					currentUserId={user?.id}
+					isAdmin={isAdmin}
 				/>
 			</div>
 		</div>

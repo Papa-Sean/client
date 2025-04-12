@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Post, PostFormData, GuestMessage } from '../types';
 import { AdminTabs } from './AdminTabs';
 import { PostsList } from './Posts/PostsList';
@@ -25,6 +25,7 @@ interface AuthenticatedViewProps {
 	handleCommentSubmit: (postId: string) => void;
 	togglePinPost: (postId: string) => void;
 	deletePost: (postId: string) => void;
+	deleteComment: (commentId: string) => void;
 	toggleResponseStatus: (messageId: string) => void;
 	theme: 'primary' | 'secondary' | 'accent';
 }
@@ -48,8 +49,12 @@ export function AuthenticatedView({
 	handleCommentSubmit,
 	togglePinPost,
 	deletePost,
+	deleteComment,
 	toggleResponseStatus,
 }: AuthenticatedViewProps) {
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [submitError, setSubmitError] = useState('');
+
 	return (
 		<>
 			{/* Admin Tabs */}
@@ -78,6 +83,7 @@ export function AuthenticatedView({
 					handleCommentSubmit={handleCommentSubmit}
 					togglePinPost={togglePinPost}
 					deletePost={deletePost}
+					deleteComment={deleteComment}
 				/>
 			)}
 

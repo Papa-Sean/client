@@ -1,11 +1,29 @@
+'use client';
+
 import Link from 'next/link';
-import { Button } from '../../../components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '../../ui/button';
+import { LogOut } from 'lucide-react';
 
 interface NavigationProps {
 	isLoggedIn: boolean;
+	isAdmin: boolean;
+	isLoading: boolean;
+	userName?: string;
 }
 
-export function Navigation({ isLoggedIn }: NavigationProps) {
+export function Navigation({
+	isLoggedIn,
+	isAdmin,
+	isLoading,
+	userName,
+}: NavigationProps) {
+	const { logout } = useAuth();
+
+	const handleLogout = async () => {
+		await logout();
+	};
+
 	return (
 		<nav className='hidden md:flex items-center gap-8'>
 			<NavLink href='/'>Home</NavLink>
@@ -13,15 +31,51 @@ export function Navigation({ isLoggedIn }: NavigationProps) {
 			<NavLink href='/merch'>Merch</NavLink>
 			<NavLink href='/say-what-up-doe'>Say What Up Doe</NavLink>
 
-			{isLoggedIn ? (
-				<Button
-					variant='outline'
-					className='rounded-full bg-secondary'
-				>
-					Log Out
-				</Button>
+			{isLoading ? (
+				<div className='h-9 w-20 bg-muted/50 animate-pulse rounded-full'></div>
+			) : isLoggedIn ? (
+				<div className='flex items-center gap-2'>
+					<div className='text-sm'>
+						Hello,{' '}
+						<span className='font-medium'>
+							{userName || 'User'}
+						</span>
+					</div>
+					{isAdmin && (
+						<Link href='/admin'>
+							<Button
+								variant='outline'
+								size='sm'
+								className='mr-2'
+							>
+								Admin
+							</Button>
+						</Link>
+					)}
+					<Button
+						variant='ghost'
+						size='sm'
+						onClick={handleLogout}
+						className='text-accent hover:text-accent/80 flex items-center gap-1'
+					>
+						<LogOut size={16} />
+						Log Out
+					</Button>
+				</div>
 			) : (
-				<Button className='rounded-full bg-primary border border-secondary text-secondary'>Sign In</Button>
+				<div className='flex gap-2'>
+					<Link href='/login'>
+						<Button
+							variant='outline'
+							className='rounded-full'
+						>
+							Log In
+						</Button>
+					</Link>
+					<Link href='/signup'>
+						<Button className='rounded-full'>Sign Up</Button>
+					</Link>
+				</div>
 			)}
 		</nav>
 	);
@@ -36,10 +90,10 @@ function NavLink({ href, children }: NavLinkProps) {
 	return (
 		<Link
 			href={href}
-			className='text-sm bg-primary border border-secondary text-secondary px-3 py-1 rounded-xl font-medium hover:text-accent hover:border-accent transition-colors relative group'
+			className='text-sm font-medium hover:text-primary transition-colors relative group'
 		>
 			{children}
-			<span className='absolute -bottom-2 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full'></span>
+			<span className='absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full'></span>
 		</Link>
 	);
 }

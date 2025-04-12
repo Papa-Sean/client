@@ -20,7 +20,10 @@ export const michiganCities = [
 	'Other',
 ];
 
+// Updated interface to match what SignupForm is sending
 interface LocationSelectProps {
+	name: string;
+	label?: string;
 	value: string;
 	error?: string;
 	disabled?: boolean;
@@ -28,6 +31,8 @@ interface LocationSelectProps {
 }
 
 export function LocationSelect({
+	name,
+	label,
 	value,
 	error,
 	disabled,
@@ -36,14 +41,14 @@ export function LocationSelect({
 	return (
 		<div>
 			<label
-				htmlFor='location'
+				htmlFor={name}
 				className='block font-medium mb-1'
 			>
-				Your Location
+				{label || 'Your Location'}
 			</label>
 			<select
-				id='location'
-				name='location'
+				id={name}
+				name={name}
 				value={value}
 				onChange={onChange}
 				className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:outline-none ${

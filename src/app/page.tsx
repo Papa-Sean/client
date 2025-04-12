@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import {
 	TypographyH1,
@@ -13,9 +13,8 @@ import { MidCenturyCard } from '@/components/ui/mid-century-card';
 import { Starburst } from '@/components/ui/starburst';
 
 export default function Home() {
-	// Mock auth state - in production, this would come from an auth context/provider
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
-	const [isAdmin, setIsAdmin] = useState(false);
+	const { isAuthenticated, user } = useAuth();
+	const isAdmin = user?.role === 'admin';
 
 	return (
 		<div className='container mx-auto px-4 py-8'>
@@ -54,7 +53,7 @@ export default function Home() {
 					</TypographyLead>
 
 					{/* Role-based CTAs */}
-					{!isLoggedIn ? (
+					{!isAuthenticated ? (
 						<Link
 							href='/signup'
 							className='rounded-full bg-primary text-secondary border border-secondary px-6 py-3 text-lg font-medium hover:bg-primary/90 transition-colors'

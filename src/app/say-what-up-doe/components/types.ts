@@ -1,7 +1,9 @@
 export interface Author {
-	id: string;
+	id?: string;
+	_id?: string;
 	name: string;
-	image: string;
+	image?: string;
+	profilePic?: string;
 }
 
 export interface Comment {
@@ -12,15 +14,21 @@ export interface Comment {
 }
 
 export interface Post {
-	id: string;
+	id?: string;
+	_id?: string;
 	title: string;
 	content: string;
-	eventDate: string;
-	location: string;
-	author: Author;
-	isPinned: boolean;
-	createdAt: string;
+	author: {
+		_id?: string;
+		id?: string;
+		name: string;
+		profilePic?: string;
+	};
+	eventDate?: string;
+	location?: string;
+	isPinned?: boolean;
 	comments: Comment[];
+	createdAt: string;
 }
 
 export interface GuestMessage {

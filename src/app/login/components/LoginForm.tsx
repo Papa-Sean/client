@@ -1,32 +1,48 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { FormInput } from './FormInput';
-import { PasswordInput } from './PasswordInput';
-import { ErrorAlert } from './ErrorAlert';
-import { DemoCredentials } from './DemoCredentials';
+'use client';
 
-export function LoginForm() {
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { InputField } from '../../signup/components/InputField';
+import { ErrorAlert } from './ErrorAlert';
+
+interface LoginFormProps {
+	onSubmit: (email: string, password: string) => Promise<void>;
+	isSubmitting: boolean;
+}
+
+export function LoginForm({ onSubmit, isSubmitting }: LoginFormProps) {
 	const router = useRouter();
+
 	const [formData, setFormData] = useState({
 		email: '',
 		password: '',
 	});
+
 	const [errors, setErrors] = useState({
 		email: '',
 		password: '',
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
+
 	const [loginError, setLoginError] = useState('');
 
 	// Handle input changes
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
-		setFormData((prev) => ({ ...prev, [name]: value }));
+		setFormData((prev) => ({
+			...prev,
+			[name]: value,
+		}));
+
 		// Clear error when user types
 		if (errors[name as keyof typeof errors]) {
-			setErrors((prev) => ({ ...prev, [name]: '' }));
+			setErrors((prev) => ({
+				...prev,
+				[name]: '',
+			}));
 		}
+
 		// Clear general login error when user makes changes
 		if (loginError) {
 			setLoginError('');
@@ -39,6 +55,7 @@ export function LoginForm() {
 			email: '',
 			password: '',
 		};
+
 		let isValid = true;
 
 		// Email validation
@@ -68,43 +85,23 @@ export function LoginForm() {
 			return;
 		}
 
-		setIsSubmitting(true);
-		setLoginError('');
-
 		try {
-			// This would be an actual API call in production
-			// Simulating API call with timeout
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-
-			// Simulate successful login for demo
-			if (
-				formData.email === 'demo@wuddevdet.com' &&
-				formData.password === 'password'
-			) {
-				console.log('Login successful');
-				// Redirect to home page after successful login
-				router.push('/');
-			} else {
-				// Demo validation error
-				setLoginError('Invalid email or password');
-			}
+			await onSubmit(formData.email, formData.password);
 		} catch (error) {
-			console.error('Login error:', error);
-			setLoginError('An error occurred during login. Please try again.');
-		} finally {
-			setIsSubmitting(false);
+			// This error is likely handled by the onSubmit function in the parent component
+			console.error('Login error in form:', error);
 		}
 	};
 
 	return (
-		<div className='bg-card rounded-lg shadow-lg p-6 md:p-8'>
-			<ErrorAlert message={loginError} />
+		<>
+			{loginError && <ErrorAlert message={loginError} />}
 
 			<form
 				onSubmit={handleSubmit}
-				className='space-y-6'
+				className='space-y-5'
 			>
-				<FormInput
+				<InputField
 					id='email'
 					name='email'
 					label='Email Address'
@@ -116,12 +113,35 @@ export function LoginForm() {
 					onChange={handleChange}
 				/>
 
-				<PasswordInput
+				<InputField
+					id='password'
+					name='password'
+					label='Password'
+					type='password'
 					value={formData.password}
 					error={errors.password}
 					disabled={isSubmitting}
 					onChange={handleChange}
 				/>
+
+				<div className='flex items-center justify-between'>
+					<label className='flex items-center'>
+						<input
+							type='checkbox'
+							className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary'
+						/>
+						<span className='ml-2 text-sm text-muted-foreground'>
+							Remember me
+						</span>
+					</label>
+
+					<Link
+						href='/forgot-password'
+						className='text-sm text-primary hover:underline'
+					>
+						Forgot password?
+					</Link>
+				</div>
 
 				<button
 					type='submit'
@@ -143,8 +163,6 @@ export function LoginForm() {
 					</Link>
 				</p>
 			</div>
-
-			<DemoCredentials />
-		</div>
+		</>
 	);
 }

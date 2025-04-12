@@ -75,7 +75,7 @@ export function PostsList({
 					})
 					.map((post) => (
 						<PostCard
-							key={post.id}
+							key={post.id || post._id} // <-- Use either id or _id
 							post={post}
 							isAdmin={isAdmin}
 							activeCommentPostId={activeCommentPostId}
